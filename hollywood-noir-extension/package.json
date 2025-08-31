@@ -1,0 +1,15 @@
+{
+  "name": "hollywood-noir-extension",
+  "version": "1.0.0",
+  "description": "A noir-themed extension.",
+  "main": "src/content.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chrome-extension",
+    "noir"
+  ],
+  "author": "",
+  "license": "MIT"
+}

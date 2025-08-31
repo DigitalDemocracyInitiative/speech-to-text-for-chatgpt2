@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Hollywood Noir Extension",
+  "version": "1.0",
+  "description": "A noir-themed extension.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chat.openai.com/*"],
+      "js": ["src/content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/prompts.json"],
+      "matches": ["https://chat.openai.com/*"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
