@@ -1,38 +1,21 @@
-class NoirInjector {
+class NoirGameManager {
     constructor() {
-        this.prompts = [];
         this.textArea = null;
+        this.actionButton = null;
         this.init();
     }
 
-    async init() {
-        await this.loadPrompts();
+    init() {
         this.observeDOM();
-    }
-
-    async loadPrompts() {
-        try {
-            const url = chrome.runtime.getURL('src/prompts.json');
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch prompts: ${response.statusText}`);
-            }
-            const data = await response.json();
-            this.prompts = data.prompts;
-            console.log("Hollywood Noir Extension: Prompts loaded successfully.");
-        } catch (error) {
-            console.error("Hollywood Noir Extension: Error loading prompts:", error);
-        }
+        this.setupMessageListener();
     }
 
     observeDOM() {
         const observer = new MutationObserver((mutations, obs) => {
             const promptTextArea = document.querySelector('#prompt-textarea');
-            if (promptTextArea && !document.querySelector('#noir-injector-button')) {
+            if (promptTextArea && !document.querySelector('#noir-action-button')) {
                 this.textArea = promptTextArea;
-                this.addInjectionButton();
-                // Once the button is added, we can stop observing if we want.
-                // obs.disconnect();
+                this.addActionButton();
             }
         });
 
@@ -42,44 +25,47 @@ class NoirInjector {
         });
     }
 
-    addInjectionButton() {
+    addActionButton() {
         const button = document.createElement('button');
-        button.id = 'noir-injector-button';
+        button.id = 'noir-action-button';
         button.className = 'flex h-9 min-w-8 items-center justify-center rounded-full border p-2 text-[13px] font-medium text-token-text-secondary border-token-border-light hover:bg-token-main-surface-secondary';
         button.type = 'button';
-        button.setAttribute('aria-label', 'Inject Noir Prompt');
-        button.title = 'Inject Noir Prompt';
+        button.title = 'Send your next action to Marlowe';
         button.style.marginLeft = '8px';
 
         const buttonText = document.createElement('span');
-        buttonText.textContent = 'Noir';
+        buttonText.textContent = 'Send Action';
         button.appendChild(buttonText);
 
-        button.addEventListener('click', () => this.injectRandomPrompt());
+        button.addEventListener('click', () => this.sendUserAction());
+        this.actionButton = button;
 
         const actionContainer = this.textArea.parentElement?.querySelector('.flex.items-center.gap-2');
-
         if (actionContainer) {
             actionContainer.prepend(button);
-        } else {
-            this.textArea.parentElement?.appendChild(button);
         }
     }
 
-    injectRandomPrompt() {
-        if (!this.textArea || this.prompts.length === 0) {
-            return;
+    sendUserAction() {
+        if (!this.textArea) return;
+
+        const userText = this.textArea.textContent;
+        if (userText.trim()) {
+            chrome.runtime.sendMessage({ action: 'user_action', text: userText });
+            this.clearInput();
         }
+    }
 
-        const randomPrompt = this.prompts[Math.floor(Math.random() * this.prompts.length)];
+    injectPrompt(text) {
+        if (!this.textArea) return;
 
-        this.textArea.textContent = randomPrompt;
+        this.textArea.textContent = text;
 
         const inputEvent = new InputEvent('input', {
             bubbles: true,
             cancelable: true,
             inputType: 'insertText',
-            data: randomPrompt,
+            data: text,
         });
         this.textArea.dispatchEvent(inputEvent);
 
@@ -93,10 +79,30 @@ class NoirInjector {
             selection.addRange(range);
         }
     }
+
+    clearInput() {
+        if (!this.textArea) return;
+        this.textArea.textContent = '';
+        const inputEvent = new InputEvent('input', { bubbles: true, cancelable: true });
+        this.textArea.dispatchEvent(inputEvent);
+    }
+
+    setupMessageListener() {
+        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+            if (request.action === 'inject_prompt') {
+                this.injectPrompt(request.text);
+                sendResponse({ status: 'prompt injected' });
+            } else if (request.action === 'end_game') {
+                this.injectPrompt(request.message);
+                if (this.actionButton) {
+                    this.actionButton.disabled = true;
+                    this.actionButton.textContent = 'Game Over';
+                }
+                sendResponse({ status: 'game ended' });
+            }
+            return true;
+        });
+    }
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new NoirInjector());
-} else {
-    new NoirInjector();
-}
+new NoirGameManager();
