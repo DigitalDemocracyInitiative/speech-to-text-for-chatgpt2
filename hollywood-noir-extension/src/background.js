@@ -1,7 +1,7 @@
 // --- STATE AND TIMER MANAGEMENT ---
 let gameState = 'not_started'; // 'not_started', 'playing', 'ended'
 let gameTimer = null;
-const GAME_DURATION_MS = 40 * 60 * 1000; // 40 minutes
+const GAME_DURATION_MS = 20 * 60 * 1000; // 20 minutes
 
 function startGameTimer() {
   if (gameTimer) clearTimeout(gameTimer);
